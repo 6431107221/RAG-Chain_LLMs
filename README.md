@@ -1,6 +1,7 @@
 # RAG-Chain LLMs Project: Document Retrieval System
 
 โปรเจกต์นี้คือระบบ **Retrieval-Augmented Generation (RAG)** ที่ใช้ LangChain และ Google Gemini ในการตอบคำถามโดยอ้างอิงจากไฟล์ PDF (`remotesensing-12-02392-v2.pdf`) 
+
 **ซึ่งเป็นไฟล์ที่ใช้ในโปรเจค Corn-Yield-Prediction-with-Geospatial-AI**
 
 ## การติดตั้ง
