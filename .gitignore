@@ -1,0 +1,11 @@
+*.venv
+env/
+.conda/
+venv/
+
+__pycache__/
+*.pyc
+*.pyd
+*.so
+
+.env
