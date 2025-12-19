@@ -1,34 +1,31 @@
 # rag_chain_hf.py
 import os
-# ✅ ใช้ HuggingFaceEmbeddings ในการค้นหา
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.chains import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_ollama import ChatOllama 
+from langchain_classic.chains import create_retrieval_chain
+from langchain_classic.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
 import config
 
-# ✅ ต้องใช้ Path เดียวกับที่สร้างใน ingestion_hf.py
-DB_PATH_HF = "./chroma_db_hf"
-
 def start_chat():
-    print("🔄 กำลังเตรียมระบบ Chatbot (HF Embeddings + Gemini LLM)...")
 
     # --- 1. Setup Models ---
-    # ใช้ Embedding ตัวเดียวกับตอน Ingest
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    embeddings = HuggingFaceEmbeddings(model_name=config.HF_EMBEDDING_MODEL)
     
-    # LLM ยังใช้ Gemini (เพราะเราแค่เลี่ยงโควต้า Embedding)
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=config.GEMINI_API_KEY)
+    # LLM Ollama
+    llm = ChatOllama(
+        model=config.HF_OLLAMA_MODEL,
+        temperature=config.TEMPERATURE 
+    )
 
     # --- 2. Load Vector Store ---
-    if not os.path.exists(DB_PATH_HF):
-        print(f"❌ ไม่พบฐานข้อมูลที่ {DB_PATH_HF} กรุณารัน ingestion_hf.py ก่อน")
+    if not os.path.exists(config.HF_VECTOR_STORE_PATH):
+        print(f"Error Vector Store:  {config.HF_VECTOR_STORE_PATH}")
         return
 
-    vectorstore = Chroma(persist_directory=DB_PATH_HF, embedding_function=embeddings)
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
+    vectorstore = Chroma(persist_directory=config.HF_VECTOR_STORE_PATH, embedding_function=embeddings)
+    retriever = vectorstore.as_retriever(search_kwargs={"k": config.K})
 
     # --- 3. Create Chain ---
     system_prompt = (
@@ -49,18 +46,19 @@ def start_chat():
     rag_chain = create_retrieval_chain(retriever, question_answer_chain)
 
     # --- 4. Chat Loop ---
-    print("🤖 ระบบพร้อมใช้งาน! (พิมพ์ 'exit' หรือ 'quit' เพื่อออก)")
+    print("ระบบพร้อมใช้งาน (พิมพ์ 'exit' หรือ 'quit' เพื่อออก)")
     while True:
         user_input = input("User: ")
-        if user_input.lower() in ["exit", "quit"]:
-            print("👋 บ๊ายบาย!")
+        if user_input.lower() in ["exit", "quit", "q", "end"]:
+            print("END QUESTION.")
             break
         
-        try:
+        try: 
             response = rag_chain.invoke({"input": user_input})
-            print(f"Bot: {response['answer']}")
+            print(f"AI_ANSWER: {response['answer']}")
+            print("-" * 50)
         except Exception as e:
-            print(f"⚠️ เกิดข้อผิดพลาด: {e}")
+            print(f"Error: {e}")
 
 if __name__ == "__main__":
     start_chat()

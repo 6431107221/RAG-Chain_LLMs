@@ -8,12 +8,12 @@ from langchain_classic.chains import create_retrieval_chain
 
 def start_chat():
     # --- 1. Setup Models ---
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    embeddings = GoogleGenerativeAIEmbeddings(model=config.GEMINI_EMBBEDING_MODEL)
     
     # LLM (Gemini)
     llm = ChatGoogleGenerativeAI(
         model=config.GEMINI_MODEL_NAME,
-        temperature=0.3 # ค่าต่ำ = ตอบตามความจริง, ค่าสูง = มีความคิดสร้างสรรค์
+        temperature=config.TEMPERATURE # ค่าต่ำ = ตอบตามความจริง, ค่าสูง = มีความคิดสร้างสรรค์
     )
 
     # --- 2. Load Vector Store ---
@@ -23,7 +23,7 @@ def start_chat():
     )
     
     retriever = vectorstore.as_retriever(
-        search_kwargs={"k": 5} # ดึงข้อมูลที่เกี่ยวข้องที่สุดมา 5 ชิ้น
+        search_kwargs={"k": config.K} # ดึงข้อมูลที่เกี่ยวข้องที่สุดมา 5 ชิ้น
     )
 
     # --- 3. Create Chain (RAG Logic) ---
@@ -48,7 +48,6 @@ def start_chat():
     rag_chain = create_retrieval_chain(retriever, question_answer_chain)
 
     print("ระบบพร้อมใช้งาน! (พิมพ์ 'exit' หรือ 'quit' เพื่อออก)")
-    print("-" * 50)
 
     # --- 4. Chat Loop ---
     while True:
@@ -58,10 +57,8 @@ def start_chat():
                 print("END QUESTION.")
                 break
             
-            # ส่งคำถามเข้า Chain
             response = rag_chain.invoke({"input": user_input})
             
-            # แสดงคำตอบ
             print(f"AI_ANSWER: {response['answer']}")
             print("-" * 50)
             

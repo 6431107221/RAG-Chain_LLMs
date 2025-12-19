@@ -9,3 +9,6 @@ __pycache__/
 *.so
 
 .env
+chroma_db/
+chroma_db_hf/
+*.sqlite3

@@ -7,3 +7,7 @@ langchain-chroma
 pypdf
 chromadb
 python-dotenv
+
+langchain-ollama
+sentence-transformers
+langchain-huggingface

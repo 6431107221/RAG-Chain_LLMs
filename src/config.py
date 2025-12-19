@@ -6,13 +6,22 @@ from pathlib import Path
 
 # -- Gemini Config --
 load_dotenv()
-
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
+GEMINI_EMBBEDING_MODEL = "models/embedding-001"
 GEMINI_MODEL_NAME = "gemini-2.5-flash"
 VECTOR_STORE_PATH = "./chroma_db"
+
+# -- HuggingFace Config --
+HF_OLLAMA_MODEL = "llama3.2"
+HF_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+HF_VECTOR_STORE_PATH = "./chroma_db_hf"
+
+# Parameters
 CHUNK_SIZE = 1000 
 CHUNK_OVERLAP = 200 
+TEMPERATURE = 0.25 # ความสร้างสรรค์ของคำตอบ
+K = 5 # จำนวนเอกสารบริบทที่ดึงมาใช้ในการตอบคำถาม
 
 # -- PDF File Path --
 BASE_DIR = Path(__file__).resolve().parent.parent
