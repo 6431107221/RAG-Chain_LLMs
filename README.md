@@ -17,7 +17,7 @@
 
 ## Technical Stack
 - Framework: LangChain
-- LLMs: Google Gemini API, Ollama (Llama 3.2 / Gemma 2)
+- LLMs: Google Gemini API, Ollama (Llama 3.2)
 - Embedding Model: Hugging Face (Sentence-Transformers), GoogleGenerativeAIEmbeddings
 - Vector Database: ChromaDB
 - Language: Python 3.10+
