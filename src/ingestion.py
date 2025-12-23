@@ -9,7 +9,7 @@ import config
 def ingest_docs():
     # --- 1. Load PDF ---
     if not os.path.exists(config.FILE_PATH):
-        print(f"Not found: {config.FILE_PATH}")
+        raise FileNotFoundError(f"PDF file not found at {config.FILE_PATH}")
 
     loader = PyPDFLoader(config.FILE_PATH)
     raw_documents = loader.load()

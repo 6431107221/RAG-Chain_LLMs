@@ -9,14 +9,14 @@ import config
 def ingest_docs():
     # 1. Load PDF
     if not os.path.exists(config.FILE_PATH):
-        print(f"Not found: {config.FILE_PATH}")
+        raise FileNotFoundError(f"PDF file not found at {config.FILE_PATH}")
 
     loader = PyPDFLoader(config.FILE_PATH)
     docs = loader.load()
     print(f"PDF: {len(docs)} pages")
 
     # 2. Split Text
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=config.CHUNK_SIZE, chunk_overlap=config.CHUNK_OVERLAP)
     splits = text_splitter.split_documents(docs)
     print(f"Separate PDF: {len(splits)} Chunks")
 
