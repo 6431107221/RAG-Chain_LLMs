@@ -10,7 +10,7 @@
 
 2.  **Hybrid LLM Support:** สลับใช้งานได้ระหว่าง **Google Gemini Pro** (High Performance) และ **Ollama: Llama 3.2** (Local/Secure)
 
-3.  **Efficient Vector Search:** ใช้ **Hugging Face** (all-MiniLM-L6-v2) และ **GoogleGenerativeAIEmbeddings** (models/embedding-001) ในการทำ Embedding และจัดเก็บใน ChromaDB
+3.  **Efficient Vector Search:** ใช้ **Hugging Face** ("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2") และ **GoogleGenerativeAIEmbeddings** ("models/text-embedding-004") ในการทำ Embedding และจัดเก็บใน ChromaDB
    
 5.  **Smart Document Processing:** ระบบแบ่ง Chunk เอกสารด้วย *RecursiveCharacterTextSplitter* เพื่อรักษาบริบท (Context) ของเนื้อหา
    
@@ -24,5 +24,10 @@
 
 ## System Workflow
  - Ingestion Phase: โหลดไฟล์ PDF -> แบ่งข้อความ -> แปลงเป็น Vector ด้วย Hugging Face -> บันทึกลง ChromaDB
- - Retrieval Phase: รับคำถาม -> แปลงคำถามเป็น Vector -> ค้นหา $k$ ชิ้นส่วนที่ใกล้เคียงที่สุดจากฐานข้อมูล
+ - Retrieval Phase: รับคำถาม -> แปลงคำถามเป็น Vector -> ค้นหาแบบ MMR ด้วย $fetch_k$ และ $k$ เพื่อหาชิ้นส่วนที่ใกล้เคียงที่สุดจากฐานข้อมูล
+   <img width="1011" height="239" alt="RagChain_prompt" src="https://github.com/user-attachments/assets/ebaa5d04-f26e-44ff-9187-eb423bcbd6eb" />
+
  - Generation Phase: ส่ง Context + คำถามให้ Ollama (Llama 3.2) เพื่อสร้างคำตอบที่แม่นยำ
+
+`Exam Test:`
+<img width="1540" height="588" alt="RagChain_Test" src="https://github.com/user-attachments/assets/0b2771c3-ed62-4086-9ce7-9f28acbe0b38" />
