@@ -1,4 +1,5 @@
 # rag_chain.py
+import os
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
@@ -13,27 +14,36 @@ def start_chat():
     # LLM (Gemini)
     llm = ChatGoogleGenerativeAI(
         model=config.GEMINI_MODEL_NAME,
-        temperature=config.TEMPERATURE # ค่าต่ำ = ตอบตามความจริง, ค่าสูง = มีความคิดสร้างสรรค์
+        temperature=config.TEMPERATURE
     )
 
     # --- 2. Load Vector Store ---
+    if not os.path.exists(config.VECTOR_STORE_PATH):
+        print(f"Error Vector Store:  {config.VECTOR_STORE_PATH}")
+        print("กรุณารัน python src/ingestion.py ก่อนใช้งาน")
+        return
+
     vectorstore = Chroma(
         persist_directory=config.VECTOR_STORE_PATH,
         embedding_function=embeddings
     )
     
+    # 2.1 MMR Retriever for diversity
     retriever = vectorstore.as_retriever(
-        search_kwargs={"k": config.K} # ดึงข้อมูลที่เกี่ยวข้องที่สุดมา 5 ชิ้น
+        search_type="mmr",
+        search_kwargs={"k": config.K, "fetch_k": 20, "lambda_mult": 0.5}
     )
 
     # --- 3. Create Chain (RAG Logic) ---
-    # สร้าง Prompt Template: สั่งให้ AI ตอบคำถามโดยใช้ Context ที่หามาได้เท่านั้น
     system_prompt = (
-        "คุณเป็นผู้ช่วยที่มีความรู้ความสามารถ "
-        "จงตอบคำถามโดยใช้ข้อมูลจาก context ข้างล่างนี้เท่านั้น "
-        "ถ้าไม่รู้คำตอบ ให้บอกว่าไม่ทราบ อย่าพยายามแต่งคำตอบขึ้นมาเอง "
+        "คุณเป็นผู้ช่วยวิจัยอัจฉริยะที่เคร่งครัดเรื่องความถูกต้องของข้อมูล "
+        "1. ตอบคำถามโดยใช้ข้อมูลจาก '[ข้อมูลพื้นฐาน]' และ '[เนื้อหาค้นหา]' เท่านั้น "
+        "2. หากมีข้อมูลในหน้าแรก ให้ตอบอย่างมั่นใจและตรงไปตรงมา โดยไม่ต้องใช้คำเกริ่นที่แสดงความไม่แน่ใจ "
+        "3. หาก 'ไม่พบข้อมูล' ในเนื้อหาที่ให้มาทั้งสองส่วน ให้ตอบว่า 'ไม่พบข้อมูลในเอกสาร' ห้ามคาดเดาหรือมโนคำตอบเองเด็ดขาด "
+        "4. คงคำศัพท์ภาษาอังกฤษสำหรับชื่อเฉพาะและศัพท์เทคนิคไว้เสมอ "
         "\n\n"
-        "{context}"
+        "[ข้อมูลพื้นฐาน]:\n{base_info}\n\n"
+        "[เนื้อหาค้นหา]:\n{context}"
     )
 
     prompt = ChatPromptTemplate.from_messages(
@@ -47,8 +57,6 @@ def start_chat():
     question_answer_chain = create_stuff_documents_chain(llm, prompt)
     rag_chain = create_retrieval_chain(retriever, question_answer_chain)
 
-    print("ระบบพร้อมใช้งาน! (พิมพ์ 'exit' หรือ 'quit' เพื่อออก)")
-
     # --- 4. Chat Loop ---
     while True:
         try:
@@ -56,15 +64,26 @@ def start_chat():
             if user_input.lower() in ["exit", "quit", "q", "end"]:
                 print("END QUESTION.")
                 break
+
+            page_1_data = vectorstore.get(where={"page": 0})
+            base_info_text = " ".join(page_1_data['documents']) if page_1_data['documents'] else "ไม่พบข้อมูลหน้าแรก"
+            if len(base_info_text) > 2000: base_info_text = base_info_text[:2000]
             
-            response = rag_chain.invoke({"input": user_input})
+            response = rag_chain.invoke({
+                "input": user_input,
+                "base_info": base_info_text
+            })
             
             print(f"AI_ANSWER: {response['answer']}")
             print("-" * 50)
             
-            # (Optional)
+            # --- Debug: Show Context ---
+            # print("\n[DEBUG] Retrieved Context (from MMR):")
             # for i, doc in enumerate(response["context"]):
-            #     print(f"Source {i+1}: {doc.page_content[:100]}...")
+                # content = doc.page_content[:200].replace('\n', ' ')
+                # page = doc.metadata.get('page', '?')
+                # print(f"  Source {i+1} (Page {page}): {content}...")
+            print("-" * 50)
 
         except Exception as e:
             print(f" Error: {e}")

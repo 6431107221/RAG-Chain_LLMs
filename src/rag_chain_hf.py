@@ -25,16 +25,23 @@ def start_chat():
         return
 
     vectorstore = Chroma(persist_directory=config.HF_VECTOR_STORE_PATH, embedding_function=embeddings)
-    retriever = vectorstore.as_retriever(search_kwargs={"k": config.K})
+    
+    # 2.1 MMR Retriever for diversity
+    retriever = vectorstore.as_retriever(
+        search_type="mmr",
+        search_kwargs={"k": config.K, "fetch_k": 20, "lambda_mult": 0.5}
+    )
 
     # --- 3. Create Chain ---
     system_prompt = (
-        "คุณเป็นผู้ช่วยอัจฉริยะสำหรับการตอบคำถาม "
-        "ให้ใช้ข้อมูลบริบทที่ได้รับ (Context) เพื่อตอบคำถามของผู้ใช้ "
-        "ถ้าไม่รู้คำตอบ ให้บอกตามตรงว่าไม่ทราบ อย่าพยายามแต่งเรื่องเอง "
-        "ตอบให้กระชับและเข้าใจง่าย"
+        "คุณเป็นผู้ช่วยวิจัยอัจฉริยะที่เคร่งครัดเรื่องความถูกต้องของข้อมูล "
+        "1. ตอบคำถามโดยใช้ข้อมูลจาก '[ข้อมูลพื้นฐาน]' และ '[เนื้อหาค้นหา]' เท่านั้น "
+        "2. หากมีข้อมูลในหน้าแรก ให้ตอบอย่างมั่นใจและตรงไปตรงมา โดยไม่ต้องใช้คำเกริ่นที่แสดงความไม่แน่ใจ "
+        "3. หาก 'ไม่พบข้อมูล' ในเนื้อหาที่ให้มาทั้งสองส่วน ให้ตอบว่า 'ไม่พบข้อมูลในเอกสาร' ห้ามคาดเดาหรือมโนคำตอบเองเด็ดขาด "
+        "4. คงคำศัพท์ภาษาอังกฤษสำหรับชื่อเฉพาะและศัพท์เทคนิคไว้เสมอ "
         "\n\n"
-        "{context}"
+        "[ข้อมูลพื้นฐาน]:\n{base_info}\n\n"
+        "[เนื้อหาค้นหา]:\n{context}"
     )
 
     prompt = ChatPromptTemplate.from_messages([
@@ -46,7 +53,6 @@ def start_chat():
     rag_chain = create_retrieval_chain(retriever, question_answer_chain)
 
     # --- 4. Chat Loop ---
-    print("ระบบพร้อมใช้งาน (พิมพ์ 'exit' หรือ 'quit' เพื่อออก)")
     while True:
         user_input = input("User: ")
         if user_input.lower() in ["exit", "quit", "q", "end"]:
@@ -54,7 +60,15 @@ def start_chat():
             break
         
         try: 
-            response = rag_chain.invoke({"input": user_input})
+            page_1_data = vectorstore.get(where={"page": 0})
+            base_info_text = " ".join(page_1_data['documents']) if page_1_data['documents'] else "ไม่พบข้อมูลหน้าแรก"
+            if len(base_info_text) > 2000: base_info_text = base_info_text[:2000]
+
+            response = rag_chain.invoke({
+                "input": user_input,
+                "base_info": base_info_text
+            })
+            
             print(f"AI_ANSWER: {response['answer']}")
             print("-" * 50)
         except Exception as e:
