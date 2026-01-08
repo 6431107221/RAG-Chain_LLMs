@@ -3,7 +3,7 @@ import os
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 import config  
 
 def ingest_docs():
@@ -18,13 +18,15 @@ def ingest_docs():
     # --- 2. Split (Chunks) ---
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=config.CHUNK_SIZE,
-        chunk_overlap=config.CHUNK_OVERLAP
+        chunk_overlap=config.CHUNK_OVERLAP,
+        add_start_index=True,
+        strip_whitespace=True
     )
     documents = text_splitter.split_documents(raw_documents)
     print(f"Separate PDF: {len(documents)} Chunks")
 
     # --- 3. Embed ---
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    embeddings = GoogleGenerativeAIEmbeddings(model=config.GEMINI_EMBBEDING_MODEL)
 
     # --- 4. Store (ChromaDB) ---
     vectorstore = Chroma.from_documents(

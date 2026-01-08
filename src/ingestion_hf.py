@@ -2,7 +2,7 @@
 import os
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 import config
 
@@ -16,12 +16,17 @@ def ingest_docs():
     print(f"PDF: {len(docs)} pages")
 
     # 2. Split Text
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=config.CHUNK_SIZE, chunk_overlap=config.CHUNK_OVERLAP)
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=config.CHUNK_SIZE, 
+        chunk_overlap=config.CHUNK_OVERLAP,
+        add_start_index=True,
+        strip_whitespace=True
+    )
     splits = text_splitter.split_documents(docs)
     print(f"Separate PDF: {len(splits)} Chunks")
 
     # 3. Embed & Store
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    embeddings = HuggingFaceEmbeddings(model_name=config.HF_EMBEDDING_MODEL)
 
     vectorstore = Chroma.from_documents(
         documents=splits,
