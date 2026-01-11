@@ -9,7 +9,7 @@ load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 GEMINI_EMBBEDING_MODEL = "models/text-embedding-004"
-GEMINI_MODEL_NAME = "gemini-1.5-flash"
+GEMINI_MODEL_NAME = "gemini-2.5-flash"
 VECTOR_STORE_PATH = "./chroma_db"
 
 # -- HuggingFace Config --
